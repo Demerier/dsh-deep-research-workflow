@@ -1,6 +1,13 @@
 # 发布到 npm
 
-包名：`dsh-deep-research-workflow`（npm 上已占位，`0.0.0-stage` 为 staged 流程的临时占位版本）。
+包名：`dsh-deep-research-workflow`。本文件是发布细节的唯一入口（README 只链到这里）；设计与流程见 [design.md](design.md)。
+
+| 项 | 值 |
+|---|---|
+| 仓库 | https://github.com/Demerier/dsh-deep-research-workflow（公开） |
+| 当前版本 | 见仓库根 `package.json`（README 不重复写版本号，避免过期） |
+| 已发布 | `0.1.0` 起可用；`0.0.0-stage` 是 staged 流程的临时占位版本 |
+| 发布 workflow | `.github/workflows/publish.yml` |
 
 ## 工作流
 

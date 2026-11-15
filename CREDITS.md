@@ -1,8 +1,27 @@
 # CREDITS
 
-上游代码与本仓库文件的逐项对应，便于核对来源与改动。
+上游代码与本仓库文件的逐项映射，便于核对来源与改动。本文件管**映射与术语**；来源、许可与借用边界在 [NOTICE.md](NOTICE.md)，章节序号与本文件对齐（1 上游 / 2 许可与归属 / 6 核对方式 / 7 免责）。
 
-## 相与文件
+## 1. 上游
+
+| 项 | 值 |
+|---|---|
+| 项目 | MiMo Code |
+| 仓库 | https://github.com/XiaomiMiMo/MiMo-Code |
+| 被移植文件 | `packages/cli/src/workflow/builtin/deep-research.js`（11,723 字节） |
+| 相关文件 | `fact-check.js`（陪审团与预算）、`workflow/builtin.ts`（内置工作流注册表） |
+| 默认分支 | `main` |
+| 取用日期 | 2026-11-15 |
+
+## 2. 许可与归属
+
+| 项 | 值 |
+|---|---|
+| 上游许可 | MIT，Copyright (c) 2026 Xiaomi |
+| 本仓库许可 | MIT，见 [LICENSE](LICENSE) |
+| 归属要求 | 保留上游版权声明与许可全文；衍生作品需说明改动 |
+
+## 3. 逐相映射
 
 | 上游 | 本仓库 | 保留 | 改动 |
 |---|---|---|---|
@@ -17,7 +36,7 @@
 | Review 相 | `lib/cite.js`、`reviewPrompt()` | 无上下文 reviewer、抽查 5 条、critical 计数、fix pass | 引用核对改为代码集合比对 |
 | `fact-check.js` 投票 | `lib/jury.js` | `JURY_SIZE 3`、`REJECT_QUORUM 2`、有效票不足不作数 | 仅取聚合，未移植抽取与分组 |
 
-## 术语对照
+## 4. 术语对照
 
 | 上游 | 本仓库 |
 |---|---|
@@ -27,7 +46,7 @@
 | `exists()/readFile()/writeFile()/glob()` | `lib/workspace.js` 同名语义函数 |
 | `agent(prompt, { schema })` | 工具参数与返回的 JSON schema |
 
-## 上游原话（供核对）
+## 5. 上游原话（供核对）
 
 ```text
 description: "Deep research report generator — brief → plan angles → parallel
@@ -38,3 +57,15 @@ whenToUse: "Use when the user wants a comprehensive, multi-source investigation
 written as a cited Markdown report. Best for broad research questions ... NOT for
 simple lookups (single websearch suffices) and NOT for precise fact-checking."
 ```
+
+## 6. 核对方式
+
+```bash
+curl -s https://api.github.com/repos/XiaomiMiMo/MiMo-Code/contents/packages/cli/src/workflow/builtin/deep-research.js \
+  | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(Buffer.from(JSON.parse(s).content,'base64').toString()))" \
+  | head -40
+```
+
+## 7. 免责
+
+本仓库与小米、MiMo 团队无任何关联，也未获其背书。
