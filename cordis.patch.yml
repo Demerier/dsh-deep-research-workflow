@@ -1,0 +1,16 @@
+# dsh-deep-research-workflow —— bundle 补丁层
+# 只插入插件本体的 host 行；不碰 profile 的 package.json。
+#
+# 可调项：
+#   enabled          总开关。false = 工具与提示词段全部不注册
+#   dataDir          运行目录，留空 = ~/.dsh/deep-research
+#   defaultDepth     quick | standard | deep
+#   maxRuns          保留最近多少次运行，超出自动清理
+- insert:
+    - id: deep-research
+      name: 'dsh-deep-research-workflow'
+      config:
+        enabled: true
+        dataDir: ''
+        defaultDepth: standard
+        maxRuns: 20
