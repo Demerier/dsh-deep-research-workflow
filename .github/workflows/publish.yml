@@ -9,6 +9,11 @@ on:
         description: 'Only run npm publish --dry-run'
         type: boolean
         default: true
+      mode:
+        description: 'publish = direct; stage = npm stage publish (needs approval in the npm UI)'
+        type: choice
+        options: [publish, stage]
+        default: publish
 
 # contents: read 用于 checkout；id-token: write 用于 npm provenance（仅公开仓库有效）
 permissions:
@@ -36,6 +41,11 @@ jobs:
         run: |
           node --version
           npm --version
+
+      # stage 模式与 trusted publishing 需要较新的 npm（>= 11.5）
+      - name: Upgrade npm
+        if: ${{ inputs.mode == 'stage' || inputs.dry_run != true }}
+        run: npm install -g npm@latest && npm --version
 
       - name: Offline regression (must pass before any publish)
         run: node test/run.mjs
@@ -76,7 +86,10 @@ jobs:
             echo "private repo: skipping --provenance (npm provenance needs a public source repo)"
           fi
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" = "stage" ]; then
+            echo "staged publishing: this version lands in the staging area and needs approval in the npm UI"
+            npm stage publish $extra
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
             npm publish $extra --dry-run
           else
             npm publish $extra
