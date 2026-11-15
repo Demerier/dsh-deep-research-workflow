@@ -1,6 +1,6 @@
 {
   "name": "dsh-deep-research-workflow",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Deep-research workflow for DeepSeek Harness: brief -> plan angles -> parallel findings -> reflect -> single-writer cited report -> cold review. A port of MiMo Code's built-in deep-research workflow to DSH plugin form.",
   "type": "module",
   "main": "lib/host.js",
