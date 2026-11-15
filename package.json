@@ -20,6 +20,7 @@
     "cordis.patch.yml",
     "README.md",
     "NOTICE.md",
+    "CREDITS.md",
     "LICENSE"
   ],
   "keywords": [
@@ -28,9 +29,22 @@
     "deepseek-harness",
     "deep-research",
     "workflow",
-    "citations"
+    "citations",
+    "research"
   ],
   "license": "MIT",
+  "author": "demerier <demerier@163.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Demerier/dsh-deep-research-workflow.git"
+  },
+  "homepage": "https://github.com/Demerier/dsh-deep-research-workflow#readme",
+  "bugs": {
+    "url": "https://github.com/Demerier/dsh-deep-research-workflow/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },

@@ -103,6 +103,48 @@ dsh plugin --profile <你的profile> add link:D:/file/dsh/work/dsh-deep-research
 node test/run.mjs     # 15 项离线回归，零网络
 ```
 
+
+## 发布到 npm
+
+仓库带 `.github/workflows/publish.yml`，两种触发方式：
+
+| 触发 | 行为 |
+|---|---|
+| 发布一个 GitHub Release | 校验 tag 与 `package.json` 版本一致 → 跑测试 → 发布 |
+| 手动 `workflow_dispatch` | 默认 `dry_run=true`，只做 `npm publish --dry-run` |
+
+发布前的硬性检查（任一条不过就停）：
+
+1. `node test/run.mjs` 全绿；
+2. release tag（去掉前缀 `v`）与 `package.json` 的 `version` 完全相同；
+3. npm 上不存在同名同版本（`npm view <name>@<version>` 必须 404）。
+
+### 认证：二选一
+
+**A. NPM_TOKEN（最简单）**
+
+1. npm → Access Tokens → Generate New Token → **Granular Access Token**，权限 `Read and write`，勾选该包；
+2. 仓库 → Settings → Secrets and variables → Actions → New repository secret，名字 `NPM_TOKEN`；
+3. 若账号开了 2FA，选 **Automation** 类型 token，否则 CI 发布时会被 2FA 卡住。
+
+**B. Trusted publishing（无密钥，推荐长期）**
+
+1. 先手动发布一次，让包在 npm 上存在；
+2. npm 包页面 → Settings → **Trusted publisher** → GitHub Actions，填 `Demerier/dsh-deep-research-workflow` 与 workflow 文件名 `publish.yml`；
+3. 仓库里不要配 `NPM_TOKEN`，并把 workflow 的 setup-node 后加一步 `npm install -g npm@latest`（trusted publishing 需要 npm ≥ 11.5.1）。
+
+### 关于 provenance
+
+`--provenance` **只对公开仓库有效**。workflow 会自动判断：仓库是 private 时跳过并打印原因；改成 public 后自动加上。
+
+### 发布流程
+
+```bash
+npm version patch          # 或 minor / major，自动打 tag
+git push --follow-tags
+gh release create v0.1.1 --generate-notes   # 触发 publish workflow
+```
+
 ## 许可
 
 MIT，见 [LICENSE](LICENSE)。上游 MiMo Code 亦为 MIT，Copyright (c) 2026 Xiaomi。

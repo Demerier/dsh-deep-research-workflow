@@ -1,0 +1,91 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only run npm publish --dry-run'
+        type: boolean
+        default: true
+
+# contents: read 用于 checkout；id-token: write 用于 npm provenance（仅公开仓库有效）
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Toolchain
+        run: |
+          node --version
+          npm --version
+
+      - name: Offline regression (must pass before any publish)
+        run: node test/run.mjs
+
+      - name: Version must match the release tag
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          pkg="$(node -p "require('./package.json').version")"
+          tag="${GITHUB_REF_NAME#v}"
+          echo "package=$pkg tag=$tag"
+          if [ "$pkg" != "$tag" ]; then
+            echo "::error::tag $GITHUB_REF_NAME and package.json version $pkg differ"
+            exit 1
+          fi
+
+      - name: Refuse to republish an existing version
+        run: |
+          set -euo pipefail
+          name="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "::error::$name@$version already exists on npm"
+            exit 1
+          fi
+          echo "$name@$version is free"
+
+      - name: Publish
+        env:
+          # 用 NPM_TOKEN 时它优先；留空则回落到 OIDC trusted publishing（需 npm >= 11.5.1）
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          extra=""
+          if [ "${{ github.event.repository.private }}" = "false" ]; then
+            extra="--provenance"
+          else
+            echo "private repo: skipping --provenance (npm provenance needs a public source repo)"
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            npm publish $extra --dry-run
+          else
+            npm publish $extra
+          fi
+
+      - name: Publish summary
+        if: always()
+        run: |
+          echo "### npm publish ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- package: $(node -p "require('./package.json').name")" >> "$GITHUB_STEP_SUMMARY"
+          echo "- version: $(node -p "require('./package.json').version")" >> "$GITHUB_STEP_SUMMARY"
+          echo "- registry: https://registry.npmjs.org/" >> "$GITHUB_STEP_SUMMARY"
