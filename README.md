@@ -1,6 +1,7 @@
 # dsh-deep-research-workflow
 
 [![test](https://github.com/Demerier/dsh-deep-research-workflow/actions/workflows/test.yml/badge.svg)](https://github.com/Demerier/dsh-deep-research-workflow/actions/workflows/test.yml)
+[![npm](https://img.shields.io/npm/v/dsh-deep-research-workflow.svg)](https://www.npmjs.com/package/dsh-deep-research-workflow)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 DeepSeek Harness 的六相深度研究工作流：**Brief → Plan → Research → Reflect → Write → Review**，产出带引用的 `REPORT.md` 与可复核的 `REVIEW.md`。
@@ -17,11 +18,19 @@ DeepSeek Harness 的六相深度研究工作流：**Brief → Plan → Research 
 
 ## 安装
 
+从 npm 安装（已发布 `0.1.0`）：
+
+```bash
+dsh plugin --profile <你的profile> add dsh-deep-research-workflow
+```
+
+开发时用本地链接：
+
 ```bash
 dsh plugin --profile <你的profile> add link:/abs/path/to/dsh-deep-research-workflow
 ```
 
-或在 profile 的 `package.json` 里加依赖与 `dsh.profile.bundles` 一行后重启 DSH。插件自带 `cordis.patch.yml`，只插入自己的 host 行。
+两种方式都会读取插件自带的 `cordis.patch.yml`，只插入自己的 host 行。重启 DSH 后九个 `deep_research_*` 工具与工作流提示词段生效。
 
 ## 六相流程
 
@@ -138,7 +147,7 @@ CI 在 Node 20 / 22 / 24 矩阵上跑同一套用例（`.github/workflows/test.y
 
 npm 包名 `dsh-deep-research-workflow`。发布流程、token 现状与 OIDC 迁移见 [docs/publishing.md](docs/publishing.md)。
 
-当前状态：`0.1.0` 已 staged，等待 npm 侧批准（staged publishing 的人工确认环节）。
+当前状态：`0.1.0` 已发布（2026-11-15）。仓库已转公开，后续版本会自动附带 npm provenance。
 
 ## 文档索引
 
