@@ -1,0 +1,54 @@
+# 设计取舍
+
+记录移植时的几个关键决定，以及不这么做的原因。
+
+## 1. 为什么不内联执行搜索
+
+上游是沙箱 JS 脚本，内部可以直接 `agent()`、`parallel()`。DSH 插件没有这些原语：
+
+- 插件不能 spawn 子 agent（那是宿主的 `subagent` 工具）；
+- 插件内部调用 `ctx.tools.execute` 需要 step-owned 的 `toolSet`，在工具执行期拿不到稳定值。
+
+因此把流程拆成**工具序列 + 文件检查点**：插件负责硬约束与格式校验，判断交给模型，并行交给宿主 `subagent`。
+
+## 2. 硬上限放在代码里
+
+`lib/budget.js` 的 `DEPTHS` 是常量，`clampAngles` / `clampDelta` 直接截断，超出的部分记进 `run.json.trimmed`。
+
+理由：把"要不要再搜一轮"交给模型协商，结果是长任务里无限扩张。上游注释写得很直白：*enforced by script, not by LLM judgment*。
+
+## 3. findings 严格校验而不是宽容接收
+
+格式不对就拒收，不写入后再纠正。
+
+理由：findings 是下游三个组件（reflect、write、引用审计）的唯一输入。一条缺 URL 的结论会让引用审计产生误判，宁可让调用方重写一次。
+
+## 4. 引用审计：机器的归机器
+
+| 环节 | 谁做 | 为什么 |
+|---|---|---|
+| `[n]` 是否有对应 Sources 条目 | 代码 | 纯集合比对，模型容易漏 |
+| Sources 的 URL 是否出现在 findings | 代码 | 防虚构引用 |
+| 单源结论统计 | 代码 | 可复算 |
+| 结论是否被来源支持、措辞是否过强 | 模型 | 需要语义判断 |
+
+## 5. provenance 的自动降级
+
+npm provenance 要求源码仓库公开。`publish.yml` 读 `github.event.repository.private` 决定是否加 `--provenance`，仓库转公开后自动生效，不需要改 workflow。
+
+## 未移植的部分
+
+| 上游能力 | 为什么没搬 |
+|---|---|
+| Max Mode（并行采样 + judge） | 属于宿主推理层，不是工作流 |
+| Goal（独立进程验收） | 同上，DSH 应用审批与沙箱表达 |
+| Dynamic Workflow 运行时 | 本仓库用工具序列替代 |
+| Memory 的 FTS 索引 | 与研究工作流无直接关系 |
+
+## 已知限制
+
+1. **无并发控制**：`deep_research_angle` 返回多个提示词，同时派几个由调用方决定；插件不限制并发，也不排队。
+2. **报告长度无上限**：只约束角度与来源数，不约束输出字数。
+3. **无成本核算**：不统计 token 消耗，也不据此提前停止。
+4. **stage 模式需人工批准**：这是 npm 的设计，不是插件缺陷。
+5. **run 目录无锁**：同一 runId 并发写入由调用方避免。
