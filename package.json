@@ -16,6 +16,7 @@
     }
   },
   "files": [
+    "docs",
     "lib",
     "cordis.patch.yml",
     "README.md",
