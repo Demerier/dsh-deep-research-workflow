@@ -9,6 +9,7 @@ import { depthOf, clampAngles, clampDelta, budgetReport, DEPTHS } from '../lib/b
 import { createRun, openRun, writeText, pruneRuns, findingFiles } from '../lib/workspace.js'
 import { registerDeepResearchTools } from '../lib/tools.js'
 import { nextAction, gate } from '../lib/phases.js'
+import { apply as applyHost } from '../lib/host.js'
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-deep-'))
 const results = []
@@ -194,6 +195,64 @@ check('15 findings 渲染回环', () => {
   assert.equal(p.ok, true, p.errors.join(';'))
   assert.equal(p.findings[0].url, 'https://d.example')
   assert.equal(stats(p).count, 1)
+})
+
+// 假 DSH 宿主：cordis 语义下，未 inject 就访问服务会抛
+function makeHost(rules = {}) {
+  const state = { tools: new Map(), sections: [], injects: [], rootAccess: 0 }
+  const mk = (parent) => {
+    const ctx = Object.create(parent ?? null)
+    ctx.effect = (fn) => { const d = fn(); return typeof d === 'function' ? d : () => {} }
+    ctx.inject = (deps, cb) => {
+      state.injects.push(deps.join(','))
+      const scoped = mk(ctx)
+      if (deps.includes('systemPrompt')) {
+        Object.defineProperty(scoped, 'systemPrompt', {
+          value: {
+            section(sec) {
+              if (rules.throwOnSection) throw new Error('section failed')
+              state.sections.push(sec)
+              return () => {}
+            },
+          },
+        })
+      }
+      if (deps.includes('tools')) scoped.tools = { register(def) { state.tools.set(def.name, def); return () => state.tools.delete(def.name) } }
+      cb(scoped)
+    }
+    return ctx
+  }
+  const root = mk(null)
+  Object.defineProperty(root, 'systemPrompt', {
+    get() { state.rootAccess += 1; throw new Error('cannot get property "systemPrompt" without inject') },
+  })
+  return { ctx: root, state }
+}
+
+const hostLogs = (dir) => fs.readFileSync(path.join(dir, 'log.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l).msg)
+
+check('16 宿主挂载：systemPrompt 走 inject，九个工具与提示词段都注册（0.1.2 事故回归）', () => {
+  const { ctx, state } = makeHost()
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-host-'))
+  applyHost(ctx, { dataDir: dir })
+  assert.equal(state.rootAccess, 0, 'apply() 在未 inject 的上下文上读了 ctx.systemPrompt')
+  assert.equal(state.tools.size, 9, '注册的工具数不等于 9')
+  assert.equal(state.sections.length, 1)
+  assert.equal(state.sections[0].name, 'research:deep')
+  assert.equal(state.sections[0].order, 32)
+  const logs = hostLogs(dir)
+  assert.ok(!logs.some((m) => m.includes('初始化失败')), logs.join(' | '))
+  assert.ok(logs.some((m) => m === 'registered 9 tools'), logs.join(' | '))
+})
+
+check('17 提示词段抛错不连累工具注册', () => {
+  const { ctx, state } = makeHost({ throwOnSection: true })
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-host-'))
+  applyHost(ctx, { dataDir: dir })
+  const logs = hostLogs(dir)
+  assert.equal(state.tools.size, 9)
+  assert.ok(logs.some((m) => m.includes('提示词段挂载失败')), logs.join(' | '))
+  assert.ok(!logs.some((m) => m.includes('初始化失败')), logs.join(' | '))
 })
 
 for (const r of results) console.log((r.ok ? 'PASS ' : 'FAIL ') + r.name + (r.ok ? '' : ' -> ' + r.why))

@@ -166,7 +166,7 @@ brief.md  plan.json  findings/   reflect.json REPORT.md REVIEW.md
 ## 开发
 
 ```bash
-node test/run.mjs     # 15 项离线回归，零网络
+node test/run.mjs     # 17 项离线回归，零网络
 ```
 
 CI 在 Node 20 / 22 / 24 上跑同一套用例。
